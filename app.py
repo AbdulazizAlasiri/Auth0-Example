@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, Response, flash, redirect, ur
 from flask_sqlalchemy import SQLAlchemy
 from flask_moment import Moment
 from flask_migrate import Migrate
-from flask_wtf import Form
+
 
 from authlib.integrations.flask_client import OAuth
 from six.moves.urllib.parse import urlencode
@@ -22,6 +22,7 @@ import sys
 import os
 from os import environ as env
 from functools import wraps
+from cryptography.fernet import Fernet
 
 import constants
 
@@ -42,7 +43,6 @@ AUTH0_BASE_URL = 'https://' + AUTH0_DOMAIN
 AUTH0_AUDIENCE = env.get(constants.AUTH0_AUDIENCE)
 
 app = Flask(__name__)
-app.secret_key = constants.SECRET_KEY
 moment = Moment(app)
 app.config.from_object('config')
 db = SQLAlchemy(app)
@@ -83,7 +83,7 @@ class User(db.Model):
     __tablename__ = 'users'
     auth0_id = db.Column(db.String,  primary_key=True)
     full_name = db.Column(db.String, nullable=False)
-    phone = db.Column(db.String(120), unique=False)
+    phone = db.Column(db.String, unique=False)
     birth_day = db.Column(db.DateTime, nullable=False)
     credit_cards = db.relationship(
         'CreditCard', backref='user', cascade="all, delete-orphan", lazy=True)
@@ -93,17 +93,39 @@ class CreditCard(db.Model):
     __tablename__ = 'credit_cards'
 
     id = db.Column(db.Integer, primary_key=True)
-    number = db.Column(db.String(16), nullable=False, unique=False)
-    expiration = db.Column(db.String(5), nullable=False)
-    # ccv = db.Column(db.String(3))
-    card_holder = db.Column(db.String(120), nullable=False)
+    number = db.Column((db.String), nullable=False, unique=False)
+    expiration = db.Column(db.String, nullable=False)
+
+    card_holder = db.Column(db.String, nullable=False)
     address = db.Column(db.String, nullable=False)
     user_id = db.Column(db.String, db.ForeignKey(
         'users.auth0_id'), nullable=False)
 
+
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
+
+
+def encrypt_data(data):
+    """
+    Encrypts a message
+    """
+    key = app.secret_key
+    encoded_data = data.encode()
+    f = Fernet(key)
+    encrypted_data = f.encrypt(encoded_data)
+    return encrypted_data
+
+
+def decrypt_data(encrypted_data):
+    """
+    Decrypts an encrypted message
+    """
+    key = app.secret_key
+    f = Fernet(key)
+    decrypted_data = f.decrypt(encrypted_data)
+    return decrypted_data
 
 
 def format_datetime(value, format='medium'):
@@ -124,6 +146,7 @@ app.jinja_env.filters['datetime'] = format_datetime
 
 @app.route('/')
 def index():
+
     profile = session.get(constants.PROFILE_KEY)
     if profile is not None:
         user_id = profile['user_id']
@@ -132,7 +155,7 @@ def index():
             return redirect(url_for('profile_form'))
 
         else:
-            cards = [{'number': card.number, 'expiration': card.expiration, 'card_id': card.id}
+            cards = [{'number': decrypt_data(card.number), 'expiration': decrypt_data(card.expiration), 'card_id': card.id}
                      for card in user.credit_cards]
             data = {
                 'user_id': user_id,
@@ -212,7 +235,7 @@ def profile_submission():
     else:
         flash('User ' + form['full_name'] + ' was successfully listed!')
 
-    return redirect(url_for('/'))
+    return redirect(url_for('index'))
 
 #  Credit Card
 #  ----------------------------------------------------------------
@@ -232,12 +255,17 @@ def credit_card_form():
 
 
 @app.route('/credit-card', methods=['POST'])
+@requires_auth
 def credit_card_submission():
     error = False
     form = request.form
+
+    enc_number = encrypt_data(form['number'])
+    enc_expiration = encrypt_data(form['expiration'])
+    enc_card_holder = encrypt_data(form['card_holder'])
     try:
-        card = CreditCard(number=form['number'], expiration=form['expiration'], card_holder=form['card_holder'],
-                          address=form['address'], user_id=session[constants.PROFILE_KEY]['user_id'])
+        card = CreditCard(number=enc_number, expiration=enc_expiration, card_holder=encrypt_data(form['card_holder']),
+                          address=encrypt_data(form['address']), user_id=session[constants.PROFILE_KEY]['user_id'])
         db.session.add(card)
         db.session.commit()
 
@@ -253,13 +281,13 @@ def credit_card_submission():
     else:
         flash('User ' + form['number'] + ' was successfully listed!')
 
-    return redirect(url_for('/'))
+    return redirect(url_for('index'))
 
 
 @app.route('/credit-card/<card_id>', methods=['DELETE'])
 def credit_card_deletion(card_id):
     error = False
-    form = request.form
+
     try:
         card = CreditCard.query.get(card_id)
         db.session.delete(card)
@@ -277,7 +305,7 @@ def credit_card_deletion(card_id):
     else:
         flash('Card ' + card.number + ' was successfully deledted!')
 
-    return redirect(url_for('/'))
+    return redirect(url_for('index'))
 
 
 @app.errorhandler(404)
