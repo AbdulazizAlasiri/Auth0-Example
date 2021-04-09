@@ -1,0 +1,56 @@
+{% extends 'layouts/main.html' %}
+{% block title %}Main Page{% endblock %}
+{% block content %}
+<style>
+    .tile {
+        height: 150px;
+    }
+</style>
+<div class="row">
+    <div class="col-sm-6">
+        <p class="lead">Group 6</p>
+        <h3>SWE445 project</h3>
+        {% if user.full_name %}
+        <p class="lead">Welcome {{ user.full_name }} </p>
+
+        <h4> Your Credit cards :</h4>
+        {% for card in user.credit_cards %}
+        <div class="col-sm-4">
+            <div class="tile ">
+                <h5> {{ card.number }}</h5>
+                <h6>{{ card.expiration }}</h6>
+                <button data-id="{{ card.card_id }}" class="remove_card btn btn-default btn-lg">X</button>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="col-sm-4">
+            <div class="tile ">
+                <a href="credit-card"> Add Card</a>
+            </div>
+        </div>
+        {% else %}
+        <h3>
+            <a href="/login"><button class="btn btn-primary btn-lg">Login</button></a>
+            <a href="/login"><button class="btn btn-default btn-lg">Register</button></a>
+        </h3>
+
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    const btns = document.querySelectorAll('.remove_card');
+    for (i = 0; i < btns.length; i++) {
+        const btn = btns[i];
+        btn.onclick = function (e) {
+            const card_id = e.target.dataset['id'];
+            console.log(card_id);
+            return fetch('/credit-card/' + card_id, {
+                method: 'DELETE',
+                headers: { redirect: true }
+            })
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'layouts/main.html' %}
+{% block title %}New Profile{% endblock %}
+{% block content %}
+<div class="form-wrapper">
+  <form method="post" class="form" action="/profile">
+    <h3 class="form-heading">Register <a href="{{ url_for('index') }}" title="Back to homepage"><i
+          class="fa fa-home pull-right"></i></a></h3>
+
+    <div class="form-group">
+      <label for="full_name">Full Name</label>
+      {{ form.full_name(class_ = 'form-control',placeholder='John Doe', autofocus = true) }}
+    </div>
+    <div class="form-group">
+      <label for="phone">Phone Number</label>
+      {{ form.phone(class_ = 'form-control',placeholder='+xxx xx-xxx-xxxx', autofocus = true) }}
+    </div>
+    <div class="form-group">
+      <label for="date_of_birth">Date of birth</label>
+      {{ form.date_of_birth(class_ = 'form-control',placeholder='DD-MM-YYYY', autofocus = true) }}
+    </div>
+    <input type="submit" value="Register" class="btn btn-primary btn-lg btn-block">
+  </form>
+</div>
+
+{% endblock %}

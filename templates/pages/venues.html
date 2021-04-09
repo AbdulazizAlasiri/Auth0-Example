@@ -1,0 +1,49 @@
+{% extends 'layouts/main.html' %}
+{% block title %}Fyyur | Venues{% endblock %}
+{% block content %}
+<style>
+	.remove_venue {
+		-webkit-appearance: none;
+		border: none;
+		color: red;
+		float: left;
+		cursor: pointer;
+		font-size: 15px;
+		background-color: transparent;
+	}
+</style>
+{% for area in areas %}
+<h3>{{ area.city }}, {{ area.state }}</h3>
+<ul class="items">
+	{% for venue in area.venues %}
+	<button data-id="{{venue.id}}" class="remove_venue ">X</button>
+	<li style="max-width: 200px;">
+
+		<a href="/venues/{{ venue.id }}">
+			<i class="fas fa-music"></i>
+			<div class="item">
+				<h5>{{ venue.name }} </h5>
+			</div>
+
+		</a>
+
+
+	</li>
+
+	{% endfor %}
+</ul>
+{% endfor %}
+<script>
+	const btns = document.querySelectorAll('.remove_venue');
+	for (i = 0; i < btns.length; i++) {
+		const btn = btns[i];
+		btn.onclick = function (e) {
+			const venue_id = e.target.dataset['id'];
+			return fetch('/venues/' + venue_id, {
+				method: 'DELETE',
+				headers: { redirect: true }
+			}).then(res => { return res.text() }).then(html => document.body.innerHTML = html)
+		}
+	}
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+babel
+python-dateutil==2.6.0
+flask-moment
+flask-wtf
+flask_sqlalchemy
+Flask-Migrate
+psycopg2
+flask
+python-dotenv
+requests
+authlib>=0.14.1
+six
