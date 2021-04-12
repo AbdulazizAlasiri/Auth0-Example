@@ -1,6 +1,6 @@
 import os
 # SECRET_KEY = os.urandom(32)
-SECRET_KEY = 'ThisIsTheSecretKey'
+SECRET_KEY = b'RzsLNcaHPDb3aHSeFthA43GPBlkvw9o_YunU4NIEdm0='
 # Grabs the folder where the script runs.
 basedir = os.path.abspath(os.path.dirname(__file__))
 

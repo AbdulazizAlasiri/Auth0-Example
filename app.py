@@ -93,15 +93,15 @@ class CreditCard(db.Model):
     __tablename__ = 'credit_cards'
 
     id = db.Column(db.Integer, primary_key=True)
-    number = db.Column((db.String), nullable=False, unique=False)
-    expiration = db.Column(db.String, nullable=False)
+    number = db.Column(db.LargeBinary, nullable=False, unique=False)
+    expiration = db.Column(db.LargeBinary, nullable=False)
 
-    card_holder = db.Column(db.String, nullable=False)
-    address = db.Column(db.String, nullable=False)
+    card_holder = db.Column(db.LargeBinary, nullable=False)
+    address = db.Column(db.LargeBinary, nullable=False)
     user_id = db.Column(db.String, db.ForeignKey(
         'users.auth0_id'), nullable=False)
 
-
+# https://docs.sqlalchemy.org/en/13/orm/mapped_attributes.html
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
@@ -125,7 +125,7 @@ def decrypt_data(encrypted_data):
     key = app.secret_key
     f = Fernet(key)
     decrypted_data = f.decrypt(encrypted_data)
-    return decrypted_data
+    return decrypted_data.decode()
 
 
 def format_datetime(value, format='medium'):
@@ -144,7 +144,7 @@ app.jinja_env.filters['datetime'] = format_datetime
 #----------------------------------------------------------------------------#
 
 
-@app.route('/')
+@ app.route('/')
 def index():
 
     profile = session.get(constants.PROFILE_KEY)
@@ -155,8 +155,17 @@ def index():
             return redirect(url_for('profile_form'))
 
         else:
-            cards = [{'number': decrypt_data(card.number), 'expiration': decrypt_data(card.expiration), 'card_id': card.id}
-                     for card in user.credit_cards]
+
+            cards = []
+            for card in user.credit_cards:
+                print('normal card: ', (card.number))
+                number = decrypt_data(card.number)
+                expiration = decrypt_data(card.expiration)
+                card_info = {
+                    'number': number, 'expiration': expiration, 'card_id': card.id
+                }
+                cards.append(card_info)
+
             data = {
                 'user_id': user_id,
                 'full_name': user.full_name,
@@ -167,7 +176,7 @@ def index():
     return render_template('pages/home.html', user={})
 
 
-@app.route('/callback')
+@ app.route('/callback')
 def callback_handling():
     auth0.authorize_access_token()
     resp = auth0.get('userinfo')
@@ -182,12 +191,12 @@ def callback_handling():
     return redirect('/')
 
 
-@app.route('/login')
+@ app.route('/login')
 def login():
     return auth0.authorize_redirect(redirect_uri=AUTH0_CALLBACK_URL, audience=AUTH0_AUDIENCE)
 
 
-@app.route('/logout')
+@ app.route('/logout')
 def logout():
     session.clear()
     params = {'returnTo': url_for(
@@ -198,8 +207,8 @@ def logout():
 #  ----------------------------------------------------------------
 
 
-@app.route('/profile', methods=['GET'])
-@requires_auth
+@ app.route('/profile', methods=['GET'])
+@ requires_auth
 def profile_form():
     profile = session.get(constants.PROFILE_KEY)
     user_id = profile['user_id']
@@ -211,8 +220,8 @@ def profile_form():
     return render_template('forms/profile.html', form=form, user=data)
 
 
-@app.route('/profile', methods=['POST'])
-@requires_auth
+@ app.route('/profile', methods=['POST'])
+@ requires_auth
 def profile_submission():
     error = False
     form = request.form
@@ -241,8 +250,8 @@ def profile_submission():
 #  ----------------------------------------------------------------
 
 
-@app.route('/credit-card', methods=['GET'])
-@requires_auth
+@ app.route('/credit-card', methods=['GET'])
+@ requires_auth
 def credit_card_form():
     profile = session.get(constants.PROFILE_KEY)
     user_id = profile['user_id']
@@ -254,8 +263,8 @@ def credit_card_form():
     return render_template('forms/credit_card.html', form=form, user=data)
 
 
-@app.route('/credit-card', methods=['POST'])
-@requires_auth
+@ app.route('/credit-card', methods=['POST'])
+@ requires_auth
 def credit_card_submission():
     error = False
     form = request.form
@@ -263,11 +272,12 @@ def credit_card_submission():
     enc_number = encrypt_data(form['number'])
     enc_expiration = encrypt_data(form['expiration'])
     enc_card_holder = encrypt_data(form['card_holder'])
+    card = CreditCard(number=enc_number, expiration=enc_expiration, card_holder=encrypt_data(form['card_holder']),
+                      address=encrypt_data(form['address']), user_id=session[constants.PROFILE_KEY]['user_id'])
+    db.session.add(card)
+    db.session.commit()
     try:
-        card = CreditCard(number=enc_number, expiration=enc_expiration, card_holder=encrypt_data(form['card_holder']),
-                          address=encrypt_data(form['address']), user_id=session[constants.PROFILE_KEY]['user_id'])
-        db.session.add(card)
-        db.session.commit()
+        pass
 
     except:
         db.session.rollback()
@@ -284,7 +294,7 @@ def credit_card_submission():
     return redirect(url_for('index'))
 
 
-@app.route('/credit-card/<card_id>', methods=['DELETE'])
+@ app.route('/credit-card/<card_id>', methods=['DELETE'])
 def credit_card_deletion(card_id):
     error = False
 
@@ -308,12 +318,12 @@ def credit_card_deletion(card_id):
     return redirect(url_for('index'))
 
 
-@app.errorhandler(404)
+@ app.errorhandler(404)
 def not_found_error(error):
     return render_template('errors/404.html', user={}), 404
 
 
-@app.errorhandler(500)
+@ app.errorhandler(500)
 def server_error(error):
     return render_template('errors/500.html', user={}), 500
 
