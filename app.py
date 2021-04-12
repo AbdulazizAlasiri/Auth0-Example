@@ -269,15 +269,14 @@ def credit_card_submission():
     error = False
     form = request.form
 
-    enc_number = encrypt_data(form['number'])
-    enc_expiration = encrypt_data(form['expiration'])
-    enc_card_holder = encrypt_data(form['card_holder'])
-    card = CreditCard(number=enc_number, expiration=enc_expiration, card_holder=encrypt_data(form['card_holder']),
-                      address=encrypt_data(form['address']), user_id=session[constants.PROFILE_KEY]['user_id'])
-    db.session.add(card)
-    db.session.commit()
     try:
-        pass
+        enc_number = encrypt_data(form['number'])
+        enc_expiration = encrypt_data(form['expiration'])
+        enc_card_holder = encrypt_data(form['card_holder'])
+        card = CreditCard(number=enc_number, expiration=enc_expiration, card_holder=encrypt_data(form['card_holder']),
+                          address=encrypt_data(form['address']), user_id=session[constants.PROFILE_KEY]['user_id'])
+        db.session.add(card)
+        db.session.commit()
 
     except:
         db.session.rollback()
