@@ -3,7 +3,8 @@
 {% block content %}
 <div class="form-wrapper">
   <form method="post" class="form" action="/credit-card">
-    <h3 class="form-heading">Register <a href="{{ url_for('index') }}" title="Back to homepage"><i
+    {{ form.csrf_token }}
+    <h3 class="form-heading">Add Credit Card <a href="{{ url_for('index') }}" title="Back to homepage"><i
           class="fa fa-home pull-right"></i></a></h3>
 
     <div class="form-group">
@@ -22,6 +23,16 @@
       <label for="address">Address line (as written on the card)</label>
       {{ form.address(class_ = 'form-control',placeholder='Place', autofocus = true) }}
     </div>
+    <ul>
+      {% for field, errors in form.errors.items() %}
+      <li style="color: red;">
+        <small class="form-text text-muted " style="color: red;">
+          {{ ', '.join(errors) }}
+        </small>
+
+      </li>
+      {% endfor %}
+    </ul>
     <input type="submit" value="Add" class="btn btn-primary btn-lg btn-block">
   </form>
 </div>

@@ -1,10 +1,10 @@
 {% extends 'layouts/main.html' %}
 {% block title %}New Profile{% endblock %}
 {% block content %}
-<div class="form-wrapper">
+<div class="form-wrapper ">
   <form method="post" class="form" action="/profile">
-    <h3 class="form-heading">Register <a href="{{ url_for('index') }}" title="Back to homepage"><i
-          class="fa fa-home pull-right"></i></a></h3>
+    {{ form.csrf_token }}
+    <h3 class="form-heading">Register </h3>
 
     <div class="form-group">
       <label for="full_name">Full Name</label>
@@ -18,7 +18,17 @@
       <label for="date_of_birth">Date of birth</label>
       {{ form.date_of_birth(class_ = 'form-control',placeholder='DD-MM-YYYY', autofocus = true) }}
     </div>
-    <input type="submit" value="Register" class="btn btn-primary btn-lg btn-block">
+    <ul>
+      {% for field, errors in form.errors.items() %}
+      <li style="color: red;">
+        <small class="form-text text-muted " style="color: red;">
+          {{ ', '.join(errors) }}
+        </small>
+
+      </li>
+      {% endfor %}
+    </ul>
+    <input type="submit" value="Next" class="btn btn-primary btn-lg btn-block">
   </form>
 </div>
 

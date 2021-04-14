@@ -7,7 +7,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_moment import Moment
 from flask_migrate import Migrate
 
-
 from authlib.integrations.flask_client import OAuth
 from six.moves.urllib.parse import urlencode
 from werkzeug.exceptions import HTTPException
@@ -158,11 +157,12 @@ def index():
 
             cards = []
             for card in user.credit_cards:
-                print('normal card: ', (card.number))
+                # print('normal card: ', (card.number))
                 number = decrypt_data(card.number)
                 expiration = decrypt_data(card.expiration)
+                holder_name = decrypt_data(card.card_holder)
                 card_info = {
-                    'number': number, 'expiration': expiration, 'card_id': card.id
+                    'number': number, 'expiration': expiration, 'card_id': card.id, 'holder_name': holder_name
                 }
                 cards.append(card_info)
 
@@ -181,7 +181,7 @@ def callback_handling():
     auth0.authorize_access_token()
     resp = auth0.get('userinfo')
     userinfo = resp.json()
-
+    print(userinfo)
     session[constants.JWT_PAYLOAD] = userinfo
     session[constants.PROFILE_KEY] = {
         'user_id': userinfo['sub'],
@@ -207,7 +207,7 @@ def logout():
 #  ----------------------------------------------------------------
 
 
-@ app.route('/profile', methods=['GET'])
+@ app.route('/profile', methods=['GET', 'POST'])
 @ requires_auth
 def profile_form():
     profile = session.get(constants.PROFILE_KEY)
@@ -217,40 +217,38 @@ def profile_form():
         return redirect('/')
     form = ProfileForm()
     data = {'user_id': user_id}
+
+    if form.validate_on_submit():
+        error = False
+
+        form = request.form
+        try:
+            user = User(auth0_id=session[constants.PROFILE_KEY]['user_id'],
+                        full_name=form['full_name'], phone=form['phone'], birth_day=form['date_of_birth'])
+            db.session.add(user)
+            db.session.commit()
+
+        except:
+            error = True
+            print(sys.exc_info())
+        finally:
+            db.session.rollback()
+            db.session.close()
+        if error:
+            flash('An error occurred. Your profile could not be listed.')
+        else:
+            flash('Profile for ' +
+                  form['full_name'] + ' was successfully listed!')
+
+        return redirect(url_for('credit_card_form'))
+
     return render_template('forms/profile.html', form=form, user=data)
-
-
-@ app.route('/profile', methods=['POST'])
-@ requires_auth
-def profile_submission():
-    error = False
-    form = request.form
-
-    try:
-        user = User(auth0_id=session[constants.PROFILE_KEY]['user_id'],
-                    full_name=form['full_name'], phone=form['phone'], birth_day=form['date_of_birth'])
-        db.session.add(user)
-        db.session.commit()
-
-    except:
-        error = True
-        print(sys.exc_info())
-    finally:
-        db.session.rollback()
-        db.session.close()
-    if error:
-        flash('An error occurred. User ' +
-              form['full_name'] + ' could not be listed.')
-    else:
-        flash('User ' + form['full_name'] + ' was successfully listed!')
-
-    return redirect(url_for('index'))
 
 #  Credit Card
 #  ----------------------------------------------------------------
 
 
-@ app.route('/credit-card', methods=['GET'])
+@ app.route('/credit-card', methods=['GET', 'POST'])
 @ requires_auth
 def credit_card_form():
     profile = session.get(constants.PROFILE_KEY)
@@ -260,37 +258,35 @@ def credit_card_form():
         return redirect('/')
     form = CreditCardForm()
     data = {'user_id': user_id}
+    if form.validate_on_submit():
+        error = False
+        form = request.form
+
+        try:
+            enc_number = encrypt_data(form['number'])
+            enc_expiration = encrypt_data(form['expiration'])
+            enc_card_holder = encrypt_data(form['card_holder'])
+            enc_address = encrypt_data(form['address'])
+            card = CreditCard(number=enc_number, expiration=enc_expiration, card_holder=enc_card_holder,
+                              address=enc_address, user_id=session[constants.PROFILE_KEY]['user_id'])
+            db.session.add(card)
+            db.session.commit()
+
+        except:
+            db.session.rollback()
+            error = True
+            print(sys.exc_info())
+        finally:
+            db.session.close()
+        if error:
+            flash('An error occurred. Card ' +
+                  form['number'] + ' could not be added.')
+        else:
+            flash('Card ' + form['number'] + ' was successfully listed!')
+
+        return redirect(url_for('index'))
+
     return render_template('forms/credit_card.html', form=form, user=data)
-
-
-@ app.route('/credit-card', methods=['POST'])
-@ requires_auth
-def credit_card_submission():
-    error = False
-    form = request.form
-
-    try:
-        enc_number = encrypt_data(form['number'])
-        enc_expiration = encrypt_data(form['expiration'])
-        enc_card_holder = encrypt_data(form['card_holder'])
-        card = CreditCard(number=enc_number, expiration=enc_expiration, card_holder=encrypt_data(form['card_holder']),
-                          address=encrypt_data(form['address']), user_id=session[constants.PROFILE_KEY]['user_id'])
-        db.session.add(card)
-        db.session.commit()
-
-    except:
-        db.session.rollback()
-        error = True
-        print(sys.exc_info())
-    finally:
-        db.session.close()
-    if error:
-        flash('An error occurred. Card ' +
-              form['number'] + ' could not be added.')
-    else:
-        flash('User ' + form['number'] + ' was successfully listed!')
-
-    return redirect(url_for('index'))
 
 
 @ app.route('/credit-card/<card_id>', methods=['DELETE'])
@@ -309,10 +305,10 @@ def credit_card_deletion(card_id):
     finally:
         db.session.close()
     if error:
-        flash('An error occurred. Card ' +
-              card.number + ' could not be deledted.')
+        flash('An error occurred. Card could not be deleted.')
     else:
-        flash('Card ' + card.number + ' was successfully deledted!')
+        flash('Card ' + decrypt_data(card.number) +
+              ' was successfully deleted!')
 
     return redirect(url_for('index'))
 

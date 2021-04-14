@@ -16,6 +16,21 @@
   <link type="text/css" rel="stylesheet" href="/static/css/main.css" />
   <link type="text/css" rel="stylesheet" href="/static/css/main.responsive.css" />
   <link type="text/css" rel="stylesheet" href="/static/css/main.quickfix.css" />
+
+  <style>
+    .center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+
+    }
+
+    .form-wrapper {
+
+      min-width: 500px;
+    }
+  </style>
   <!-- /styles -->
 
   <!-- favicons -->
@@ -36,50 +51,54 @@
   <!-- /scripts -->
 </head>
 
-<body>
+<body class="d-xl-flex justify-content-xl-center align-items-xl-center" style="min-width: 100%;min-height: 100%;">
 
   <!-- Wrap all page content here -->
-  <div id="wrap">
 
-    <!-- Fixed navbar -->
-    <div class="navbar navbar-default navbar-fixed-top">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          {% if user.user_id %}
-          <a class="navbar-brand" href="/logout">Logout</a>
-          {% endif %}
-        </div>
-      </div>
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-block alert-info fade in">
+    <a class="close" data-dismiss="alert">&times;</a>
+    {{ message }}
+  </div>
+  {% endfor %}
+  {% endif %}
+  {% endwith %}
+
+
+  <div class="col-md-6 flex-row align-content-center"
+    style="background: #6f64f8;max-width: 900px;width: 50%;min-height: 100%;min-height: 700px;">
+    <div style="margin: 20% auto 30%;">
+      <h1 style="text-align: center;color: rgb(255,255,255);"><i class="fa fa-star"
+          style="text-align: center;color: rgb(255,255,255);font-size: 500%;"></i></h1>
+      <h1 style="text-align: center;color: rgb(255,255,255);">Dhahran E-shopping and Tracking System</h1>
+      <p style="text-align: center;color: rgb(255,255,255);">For ordering and tracking item e-shop items</p>
     </div>
-
-    <!-- Begin page content -->
-    <main id="content" role="main" class="container">
-
-      {% with messages = get_flashed_messages() %}
-      {% if messages %}
-      {% for message in messages %}
-      <div class="alert alert-block alert-info fade in">
-        <a class="close" data-dismiss="alert">&times;</a>
-        {{ message }}
-      </div>
-      {% endfor %}
-      {% endif %}
-      {% endwith %}
-
-      {% block content %}{% endblock %}
-
-    </main>
+    <p style="text-align: center;color: rgb(255,255,255);">EShop &copy; All Rights Reserved.</p>
 
   </div>
+  <!-- Begin page content -->
+  <div class="col-md-6 flex-row ">
+    {% if user.user_id %}
+    <h3 class="form-heading"> <a href="{{ url_for('logout') }}" title="Sign Out"><i
+          class="fa fa-sign-out pull-right">Logout</i></a></h3> {% endif %}
+    <br>
+    <br>
+    <div class=" center">
+
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+  <!-- <p>EShop &copy; All Rights Reserved.</p> -->
+
+  <!-- </div> -->
+  <!-- </main> -->
+
 
   <div id="footer">
     <div class="container">
-      <p>EShop &copy; All Rights Reserved.</p>
+
       {% block footer %}{% endblock %}
     </div>
   </div>
