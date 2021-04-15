@@ -1,9 +1,0 @@
-{
-    "python.pythonPath": "env\\Scripts\\python.exe",
-    "cSpell.words": [
-        "dateutil",
-        "dotenv",
-        "pkcs",
-        "werkzeug"
-    ]
-}
