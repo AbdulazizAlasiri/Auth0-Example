@@ -8,7 +8,7 @@ from datetime import date
 
 class CreditCardForm(Form):
     number = StringField(
-        'number', validators=[DataRequired(), Regexp(r'^[0-9]{16}\s*$', message='Credit card number must be in the form of xxxx xxxx xxxx xxxx')]
+        'number', validators=[DataRequired(), Regexp(r'\b(?:\d[ -]*?){16}\b', message='Credit card number must be in the form of xxxx xxxx xxxx xxxx')]
     )
 
     expiration = StringField(
