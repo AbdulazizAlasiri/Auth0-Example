@@ -8,7 +8,7 @@ from datetime import date
 
 class CreditCardForm(Form):
     number = StringField(
-        'number', validators=[DataRequired(), Regexp(r'^[0-9]{12}$', message='Credit card number must be in the form of xxxx xxxx xxxx xxxx')]
+        'number', validators=[DataRequired(), Regexp(r'^[0-9]{16}\s*$', message='Credit card number must be in the form of xxxx xxxx xxxx xxxx')]
     )
 
     expiration = StringField(
@@ -35,7 +35,7 @@ class ProfileForm(Form):
 
     date_of_birth = DateField(
         'date_of_birth',
-        validators=[DataRequired(), ],
+        validators=[DataRequired(message='Please enter a valid date'), ],
 
         default=datetime.today().date().replace(year=datetime.today().date().year-13)
     )
