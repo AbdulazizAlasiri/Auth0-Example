@@ -1,3 +1,7 @@
+
+#  IMPORTANT: Make sure the change the secret key and the database password on prodaction.
+#  IMPORTANT: Add this file to gitignore.
+
 import os
 # SECRET_KEY = os.urandom(32)
 SECRET_KEY = b'RzsLNcaHPDb3aHSeFthA43GPBlkvw9o_YunU4NIEdm0='
